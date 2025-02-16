@@ -1,0 +1,89 @@
+#version 450
+
+layout (local_size_x = 16, local_size_y = 16) in;
+layout (binding = 0, rgba8) uniform readonly image2D inputImage;
+layout (binding = 1, rgba8) uniform image2D resultImage;
+layout (binding = 2, rgba8) uniform readonly image2D inputImage_Practice1;
+layout (binding = 3, rgba8) uniform readonly image2D inputImage_Practice2;
+layout (binding = 4, rgba8) uniform readonly image2D inputImage_Practice3;
+
+float conv(in float[9] kernel, in float[9] data, in float denom, in float offset) 
+{
+   float res = 0.0;
+   for (int i=0; i<9; ++i) 
+   {
+      res += kernel[i] * data[i];
+   }
+   return clamp(res/denom + offset, 0.0, 1.0);
+}
+
+struct ImageData 
+{
+	float r[9];
+	float g[9];
+	float b[9];
+} imageData;	
+
+void main()
+{
+	float R = 0.0f, G = 0.0f;
+	ivec2 RTSize = imageSize(resultImage);
+
+	uint TextureIndex = 0;
+	uint X = gl_GlobalInvocationID.x, Y = gl_GlobalInvocationID.y;
+	
+	if (gl_GlobalInvocationID.x > RTSize.x / 2.0f)
+	{
+		X = gl_GlobalInvocationID.x - RTSize.x / int(2.0);
+		TextureIndex += 1;
+	}
+	
+	if (gl_GlobalInvocationID.y > RTSize.y / 2.0f)
+	{
+		Y = gl_GlobalInvocationID.y - RTSize.y / int(2.0);
+		TextureIndex += 2;
+	}
+	
+	vec3 rgb;
+
+	if (TextureIndex == 0)
+	{
+		X = X * 2;
+		Y = Y * 2;
+		X = uint(float(X) / float(RTSize.x) * imageSize(inputImage).x);
+		Y = uint(float(Y) / float(RTSize.y) * imageSize(inputImage).y);
+		ivec2 SampleCoordinate = ivec2(X, Y);
+
+		rgb = imageLoad(inputImage, SampleCoordinate).rgb;
+	}
+	else if (TextureIndex == 1)
+	{
+		X = X * 2;
+		Y = Y * 2;
+		X = uint(float(X) / float(RTSize.x) * imageSize(inputImage_Practice1).x);
+		Y = uint(float(Y) / float(RTSize.y) * imageSize(inputImage_Practice1).y);
+		ivec2 SampleCoordinate = ivec2(X, Y);
+		rgb = imageLoad(inputImage_Practice1, SampleCoordinate).rgb;
+	}
+	else if (TextureIndex == 2)
+	{
+		X = X * 2;
+		Y = Y * 2;
+		X = uint(float(X) / float(RTSize.x) * imageSize(inputImage_Practice2).x);
+		Y = uint(float(Y) / float(RTSize.y) * imageSize(inputImage_Practice2).y);
+		ivec2 SampleCoordinate = ivec2(X, Y);
+		rgb = imageLoad(inputImage_Practice2, SampleCoordinate).rgb;
+	}
+	else if (TextureIndex == 3)
+	{
+		X = X * 2;
+		Y = Y * 2;
+		X = uint(float(X) / float(RTSize.x) * imageSize(inputImage_Practice3).x);
+		Y = uint(float(Y) / float(RTSize.y) * imageSize(inputImage_Practice3).y);
+		ivec2 SampleCoordinate = ivec2(X, Y);
+		rgb = imageLoad(inputImage_Practice3, SampleCoordinate).rgb;
+	}
+
+
+	imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), vec4(rgb, 0.0f));
+}
